@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BuildOS Agent Workspace Demo</title>
+  <style>
+    :root {
+      --ink: #17251f;
+      --muted: #68746e;
+      --paper: #f5f3ec;
+      --card: #fffef9;
+      --line: #deddd5;
+      --green: #0d6b4f;
+      --green-2: #dff3e9;
+      --orange: #cc5c2d;
+      --orange-2: #fff0e8;
+      --nav: #142c25;
+      --shadow: 0 16px 44px rgba(29, 46, 38, .09);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Noto Sans TC", sans-serif;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 238px 1fr; }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; padding: 26px 18px;
+      color: #eef7f3; background: var(--nav); display: flex; flex-direction: column;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; }
+    .logo { width: 34px; height: 34px; border: 1px solid #91c6b0; display: grid; place-items: center; border-radius: 10px; }
+    .logo:before { content: "B"; color: #b9f2d7; }
+    .eyebrow { margin: 7px 0 0 44px; color: #98b6aa; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+    nav { margin-top: 34px; display: grid; gap: 7px; }
+    .nav-item { border: 0; background: transparent; color: #bcd0c8; padding: 11px 12px; border-radius: 9px; text-align: left; }
+    .nav-item.active, .nav-item:hover { color: white; background: rgba(255,255,255,.09); }
+    .nav-item span { display: inline-grid; width: 25px; }
+    .side-foot { margin-top: auto; padding: 14px; border: 1px solid rgba(255,255,255,.12); border-radius: 13px; background: rgba(255,255,255,.05); }
+    .side-foot small { color: #9db6ac; }
+    .side-foot strong { display: block; margin: 5px 0 10px; font-size: 14px; }
+    .side-foot .bar { height: 5px; background: rgba(255,255,255,.12); border-radius: 10px; overflow: hidden; }
+    .side-foot .bar i { display: block; width: 68%; height: 100%; background: #69d7aa; }
+
+    main { min-width: 0; padding: 24px 32px 50px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .project-select { border: 0; background: transparent; color: var(--ink); font-weight: 750; font-size: 15px; }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
+    .roles { display: flex; padding: 3px; background: #e7e6df; border-radius: 10px; }
+    .role-btn { border: 0; color: var(--muted); background: transparent; padding: 7px 11px; border-radius: 7px; font-size: 13px; }
+    .role-btn.active { color: var(--ink); background: var(--card); box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+    .avatar { width: 36px; height: 36px; display: grid; place-items: center; background: #d8b276; color: #392918; font-weight: 800; border-radius: 50%; }
+
+    .hero { margin: 36px 0 24px; display: flex; justify-content: space-between; align-items: end; gap: 24px; }
+    .kicker { color: var(--green); font-size: 12px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { max-width: 720px; margin: 8px 0 9px; font-family: Georgia, "Noto Serif TC", serif; font-size: clamp(30px, 4vw, 48px); line-height: 1.08; letter-spacing: -.03em; }
+    .hero p { margin: 0; color: var(--muted); }
+    .status-pill { white-space: nowrap; padding: 10px 13px; border-radius: 999px; background: var(--green-2); color: var(--green); font-size: 13px; font-weight: 750; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .kpi, .card { border: 1px solid var(--line); background: var(--card); border-radius: 16px; box-shadow: 0 2px 0 rgba(20,44,37,.02); }
+    .kpi { padding: 17px; }
+    .kpi .label { color: var(--muted); font-size: 12px; }
+    .kpi .value { margin: 7px 0 4px; font-size: 26px; font-weight: 800; letter-spacing: -.03em; }
+    .kpi .delta { color: var(--green); font-size: 11px; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(290px, .7fr); gap: 16px; }
+    .workspace > * { min-width: 0; }
+    .card { padding: 20px; }
+    .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
+    .card-head h2, .card-head h3 { margin: 0 0 5px; font-size: 17px; }
+    .card-head p { margin: 0; color: var(--muted); font-size: 12px; }
+    .ghost-btn, .secondary-btn, .primary-btn { border-radius: 9px; padding: 9px 12px; font-weight: 750; font-size: 13px; }
+    .ghost-btn { border: 1px solid var(--line); color: var(--ink); background: white; }
+    .secondary-btn { border: 1px solid #abcbbb; color: var(--green); background: #f6fffa; }
+    .primary-btn { border: 1px solid var(--green); color: white; background: var(--green); box-shadow: 0 7px 16px rgba(13,107,79,.18); }
+    button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 2px 0 20px; }
+    .step { position: relative; color: #8b938f; font-size: 11px; padding-top: 19px; }
+    .step:before { content: ""; position: absolute; left: 0; right: 0; top: 5px; height: 4px; background: #e1e1da; border-radius: 10px; }
+    .step.done, .step.active { color: var(--ink); font-weight: 700; }
+    .step.done:before { background: var(--green); }
+    .step.active:before { background: linear-gradient(90deg, var(--green) 55%, #e1e1da 55%); }
+
+    .quote-source { display: flex; gap: 8px; align-items: center; padding: 11px 12px; margin-bottom: 14px; border: 1px dashed #cfcfc5; background: #faf9f4; border-radius: 11px; font-size: 12px; }
+    .quote-source b { margin-left: auto; color: var(--green); }
+    .table-wrap { overflow-x: auto; min-height: 218px; }
+    table { width: 100%; border-collapse: collapse; min-width: 690px; font-size: 12px; }
+    th { padding: 10px 9px; color: var(--muted); text-align: right; font-weight: 650; border-bottom: 1px solid var(--line); }
+    th:first-child, td:first-child { text-align: left; }
+    td { padding: 13px 9px; text-align: right; border-bottom: 1px solid #ecebe4; vertical-align: top; }
+    td strong { display: block; font-size: 13px; }
+    td small { color: var(--muted); }
+    .price.lowest { color: var(--green); font-weight: 850; background: #effaf4; border-radius: 7px; }
+    .price.anomaly { color: var(--orange); font-weight: 850; background: var(--orange-2); border-radius: 7px; }
+    .empty-state { min-height: 190px; display: grid; place-items: center; text-align: center; color: var(--muted); }
+    .empty-icon { width: 52px; height: 52px; margin: auto auto 12px; border: 1px solid var(--line); border-radius: 16px; display: grid; place-items: center; font-size: 22px; background: white; }
+    .toolbar { margin-top: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+    .threshold { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+    input[type="range"] { accent-color: var(--green); width: 100px; }
+    .button-row { display: flex; gap: 8px; }
+
+    .agent-card { color: #eff9f5; background: var(--nav); border: 0; box-shadow: var(--shadow); }
+    .agent-card .card-head p { color: #a9c1b7; }
+    .agent-mark { width: 35px; height: 35px; display: grid; place-items: center; background: #2b4d42; border: 1px solid #42675a; border-radius: 10px; }
+    .agent-summary { min-height: 156px; padding: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(255,255,255,.045); }
+    .agent-summary h3 { margin: 0 0 8px; color: #9fe7c5; font-family: Georgia, serif; font-size: 22px; }
+    .agent-summary p { margin: 0; color: #cbded6; font-size: 13px; line-height: 1.7; }
+    .agent-summary .hint { margin-top: 12px; padding-top: 11px; border-top: 1px solid rgba(255,255,255,.1); color: #8fab9f; font-size: 11px; }
+    .audit { margin-top: 14px; }
+    .audit-title { color: #9ab2a8; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
+    .audit ul { max-height: 168px; overflow: auto; list-style: none; padding: 0; margin: 10px 0 0; }
+    .audit li { position: relative; padding: 0 0 12px 17px; color: #cadbd4; font-size: 11px; line-height: 1.45; }
+    .audit li:before { content: ""; position: absolute; left: 1px; top: 4px; width: 6px; height: 6px; background: #72d9af; border-radius: 50%; }
+    .audit time { color: #789489; margin-right: 6px; }
+
+    .ops { margin-top: 16px; }
+    .ops-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
+    .funnel { display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; gap: 8px; height: 128px; padding-top: 8px; }
+    .funnel-item { display: flex; flex-direction: column; justify-content: end; min-width: 0; }
+    .funnel-item b { margin-bottom: 6px; font-size: 13px; }
+    .funnel-item i { display: block; width: 100%; min-height: 8px; background: var(--green); border-radius: 7px 7px 2px 2px; opacity: calc(.45 + var(--opacity)); }
+    .funnel-item small { margin-top: 6px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .experiments { display: grid; gap: 9px; }
+    .experiment { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); background: #fbfaf6; border-radius: 10px; font-size: 12px; }
+    .experiment b { margin-left: auto; color: var(--green); font-size: 10px; }
+
+    .toast { position: fixed; right: 24px; bottom: 24px; z-index: 20; transform: translateY(90px); opacity: 0; color: white; background: var(--ink); border-radius: 10px; padding: 12px 15px; box-shadow: var(--shadow); transition: .25s ease; font-size: 13px; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    dialog { width: min(480px, calc(100% - 30px)); border: 0; border-radius: 18px; padding: 0; box-shadow: 0 30px 80px rgba(0,0,0,.28); }
+    dialog::backdrop { background: rgba(12,29,23,.5); backdrop-filter: blur(3px); }
+    .modal { padding: 24px; }
+    .modal h2 { margin: 0 0 5px; }
+    .modal > p { margin: 0 0 20px; color: var(--muted); font-size: 13px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 700; }
+    .field input { width: 100%; padding: 11px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+    .field input:focus { outline: 2px solid #a8d8c4; border-color: var(--green); }
+    .form-error { min-height: 18px; margin: -4px 0 8px; color: #b3452a; font-size: 12px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .loading { display: inline-flex; gap: 4px; align-items: center; }
+    .loading i { width: 5px; height: 5px; background: currentColor; border-radius: 50%; animation: pulse .8s infinite alternate; }
+    .loading i:nth-child(2) { animation-delay: .15s; }
+    .loading i:nth-child(3) { animation-delay: .3s; }
+    @keyframes pulse { to { opacity: .25; transform: translateY(-3px); } }
+
+    @media (max-width: 1000px) {
+      .app { grid-template-columns: 80px 1fr; }
+      .sidebar { padding: 24px 12px; }
+      .brand { justify-content: center; }
+      .brand > span, .eyebrow, .nav-item .nav-label, .side-foot { display: none; }
+      .nav-item { text-align: center; }
+      .nav-item span { width: auto; }
+      .workspace, .ops-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      .app { display: block; }
+      .sidebar { position: static; width: 100%; height: auto; padding: 12px 15px; flex-direction: row; align-items: center; }
+      .brand { justify-content: flex-start; }
+      .brand > span { display: block; }
+      nav { margin: 0 0 0 auto; display: flex; }
+      .nav-item { display: none; }
+      .nav-item.active { display: block; }
+      main { padding: 18px 15px 40px; }
+      .topbar, .hero { align-items: flex-start; }
+      .topbar { flex-direction: column; }
+      .top-actions { width: 100%; justify-content: space-between; }
+      .avatar { display: none; }
+      .hero { margin-top: 26px; flex-direction: column; }
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      .steps { gap: 3px; }
+      .step { font-size: 9.5px; letter-spacing: -.02em; }
+      .funnel { overflow-x: auto; grid-template-columns: repeat(5, minmax(84px, 1fr)); }
+      .toolbar { align-items: stretch; }
+      .button-row { width: 100%; }
+      .button-row button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div>
+        <div class="brand"><div class="logo"></div><span>BuildOS</span></div>
+        <p class="eyebrow">Agent workspace</p>
+      </div>
+      <nav aria-label="主要導覽">
+        <button class="nav-item active"><span>▦</span><span class="nav-label">專案總覽</span></button>
+        <button class="nav-item"><span>↗</span><span class="nav-label">詢價任務</span></button>
+        <button class="nav-item"><span>⌁</span><span class="nav-label">報價解析</span></button>
+        <button class="nav-item"><span>□</span><span class="nav-label">樣品與訂單</span></button>
+        <button class="nav-item"><span>♙</span><span class="nav-label">供應商</span></button>
+        <button class="nav-item"><span>◎</span><span class="nav-label">Agent 紀錄</span></button>
+      </nav>
+      <div class="side-foot">
+        <small>本月 Agent 任務</small>
+        <strong>68 / 100 次</strong>
+        <div class="bar"><i></i></div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <select class="project-select" aria-label="選擇專案">
+          <option>台北信義住宅案 · 施工中</option>
+          <option>新竹辦公室案 · 詢價中</option>
+        </select>
+        <div class="top-actions">
+          <div class="roles" aria-label="角色視角">
+            <button class="role-btn active" data-role="buyer">採購</button>
+            <button class="role-btn" data-role="pm">PM</button>
+            <button class="role-btn" data-role="owner">老闆</button>
+          </div>
+          <div class="avatar">郭</div>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div>
+          <div class="kicker">Monday · 09:42</div>
+          <h1 id="heroTitle">今天有 3 份報價，等待你確認。</h1>
+          <p id="heroSub">Agent 已完成欄位擷取；確認後才能進入比價與下一步流程。</p>
+        </div>
+        <div class="status-pill" id="projectStatus">● 專案進度正常</div>
+      </section>
+
+      <section class="kpis" id="kpiGrid" aria-label="關鍵指標"></section>
+
+      <section class="workspace">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h2>RFQ-024 · 公共區域材料詢價</h2>
+              <p>由 Agent 從 3 份供應商報價中擷取，需人工確認後才能採用。</p>
+            </div>
+            <button class="ghost-btn" id="newTaskBtn">＋ 新任務</button>
+          </div>
+
+          <div class="steps" id="steps">
+            <div class="step done">已收件</div>
+            <div class="step active">AI 解析</div>
+            <div class="step">人工核准</div>
+            <div class="step">樣品／訂單</div>
+          </div>
+
+          <div class="quote-source">
+            <span>◫</span> 來源：2 份 PDF、1 張 LINE 截圖
+            <b>已掃描 27 個欄位</b>
+          </div>
+
+          <div class="table-wrap" id="comparisonArea">
+            <div class="empty-state">
+              <div>
+                <div class="empty-icon">⌁</div>
+                <strong>報價已就緒，等待 Agent 執行比價</strong>
+                <p>將統一規格、單位與含稅價格，並標示最低價與異常報價。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <label class="threshold">異常門檻
+              <input id="threshold" type="range" min="10" max="35" value="20" />
+              <strong id="thresholdValue">20%</strong>
+            </label>
+            <div class="button-row">
+              <button class="secondary-btn" id="approveBtn" disabled>人工確認結果</button>
+              <button class="primary-btn" id="runBtn">執行 AI 比價</button>
+            </div>
+          </div>
+        </article>
+
+        <aside class="card agent-card">
+          <div class="card-head">
+            <div>
+              <h2>Agent 建議</h2>
+              <p>每個決策都保留來源與人工核准紀錄</p>
+            </div>
+            <div class="agent-mark">✦</div>
+          </div>
+          <div class="agent-summary" id="agentSummary">
+            <h3>等待分析</h3>
+            <p>完成 AI 比價後，我會整理節省空間、異常供應商與建議的下一個動作。</p>
+            <div class="hint">信任設計：AI 建議不會直接送出訂單。</div>
+          </div>
+          <div class="audit">
+            <div class="audit-title">稽核紀錄</div>
+            <ul id="auditLog">
+              <li><time>09:42</time>景曜材料報價已收件</li>
+              <li><time>09:38</time>森禾建材 LINE 截圖已轉檔</li>
+              <li><time>09:31</time>宏材實業 PDF 報價已收件</li>
+            </ul>
+          </div>
+        </aside>
+      </section>
+
+      <section class="ops card">
+        <div class="card-head">
+          <div>
+            <h2>營運漏斗 · 過去 30 天</h2>
+            <p>不要只追註冊數，追蹤每個專案是否真正完成一次「可核准的採購任務」。</p>
+          </div>
+          <button class="ghost-btn" id="metricBtn">切換：專案週</button>
+        </div>
+        <div class="ops-grid">
+          <div class="funnel" aria-label="營運漏斗">
+            <div class="funnel-item"><b>42</b><i style="height:100px;--opacity:.5"></i><small>建立專案</small></div>
+            <div class="funnel-item"><b>31</b><i style="height:76px;--opacity:.4"></i><small>上傳報價</small></div>
+            <div class="funnel-item"><b>24</b><i style="height:59px;--opacity:.3"></i><small>人工確認</small></div>
+            <div class="funnel-item"><b>18</b><i style="height:45px;--opacity:.2"></i><small>完成比價</small></div>
+            <div class="funnel-item"><b>11</b><i style="height:28px;--opacity:.1"></i><small>樣品／訂單</small></div>
+          </div>
+          <div class="experiments">
+            <div class="experiment"><span>①</span><span>新專案 24 小時內完成首次三方比價</span><b>ACTIVATION</b></div>
+            <div class="experiment"><span>②</span><span>供應商免登入回覆連結＋到期提醒</span><b>RESPONSE</b></div>
+            <div class="experiment"><span>③</span><span>比價核准後直接建立樣品追蹤任務</span><b>RETENTION</b></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="newTaskDialog">
+    <form class="modal" id="newTaskForm" novalidate>
+      <h2>建立詢價任務</h2>
+      <p>Agent 會把需求轉成標準詢價單；送出前仍由你確認。</p>
+      <div class="field">
+        <label for="material">材料名稱 *</label>
+        <input id="material" name="material" placeholder="例如：防焰木皮板" />
+      </div>
+      <div class="field">
+        <label for="spec">規格／品牌偏好</label>
+        <input id="spec" name="spec" placeholder="例如：9mm、F1、防焰一級" />
+      </div>
+      <div class="field">
+        <label for="qty">數量</label>
+        <input id="qty" name="qty" type="number" min="1" value="120" />
+      </div>
+      <div class="form-error" id="formError" role="alert"></div>
+      <div class="modal-actions">
+        <button type="button" class="ghost-btn" id="cancelTask">取消</button>
+        <button type="submit" class="primary-btn">產生詢價草稿</button>
+      </div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const quotes = [
+      { item: 'SPC 石塑地板', spec: '5mm｜耐磨層 0.5mm', qty: 420, unit: 'm²', confidence: 94, prices: [510, 498, 685] },
+      { item: '低甲醛系統板', spec: 'E1｜18mm', qty: 96, unit: '片', confidence: 88, prices: [960, 930, 1120] },
+      { item: '水性乳膠漆', spec: '18L｜低 VOC', qty: 24, unit: '桶', confidence: 97, prices: [1980, 2050, 2670] }
+    ];
+    const suppliers = ['宏材實業', '景曜材料', '森禾建材'];
+    const state = { analyzed: false, approved: false, sampled: false, role: 'buyer', weekly: false };
+    const comparisonArea = document.querySelector('#comparisonArea');
+    const threshold = document.querySelector('#threshold');
+    const thresholdValue = document.querySelector('#thresholdValue');
+    const runBtn = document.querySelector('#runBtn');
+    const approveBtn = document.querySelector('#approveBtn');
+    const steps = [...document.querySelectorAll('.step')];
+
+    const roleContent = {
+      buyer: {
+        title: '今天有 3 份報價，等待你確認。',
+        sub: 'Agent 已完成欄位擷取；確認後才能進入比價與下一步流程。',
+        kpis: [['待確認報價','3 份','今天＋2'],['供應商回覆率','72%','較上週＋8%'],['平均詢價週期','2.4 天','縮短 0.7 天'],['待追樣品','4 件','1 件逾期']]
+      },
+      pm: {
+        title: '兩個材料項目可能影響本週進度。',
+        sub: '把採購狀態連回工序，讓 PM 只處理會影響工期的例外。',
+        kpis: [['本週到料','8 / 10','2 件有風險'],['採購預算差異','-3.8%','低於預算'],['等待核准','2 項','最久 18 小時'],['施工里程碑','78%','進度正常']]
+      },
+      owner: {
+        title: '本月有 NT$ 184,320 可議價空間。',
+        sub: '只呈現跨專案的成本例外、供應風險與需要決策的項目。',
+        kpis: [['潛在節省','NT$ 184K','跨 4 個專案'],['異常報價率','9.6%','下降 2.1%'],['準時到料率','91%','較上月＋4%'],['活躍專案','7','3 個施工中']]
+      }
+    };
+
+    function renderKpis() {
+      const content = roleContent[state.role];
+      document.querySelector('#heroTitle').textContent = content.title;
+      document.querySelector('#heroSub').textContent = content.sub;
+      document.querySelector('#kpiGrid').innerHTML = content.kpis.map(([label, value, delta]) => `
+        <div class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="delta">${delta}</div></div>
+      `).join('');
+    }
+
+    function median(values) {
+      const sorted = [...values].sort((a,b) => a-b);
+      return sorted[Math.floor(sorted.length / 2)];
+    }
+
+    function renderTable() {
+      const limit = Number(threshold.value) / 100;
+      comparisonArea.innerHTML = `
+        <table>
+          <thead><tr><th>品項／規格</th><th>數量</th>${suppliers.map(s => `<th>${s}</th>`).join('')}<th>AI 信心</th></tr></thead>
+          <tbody>${quotes.map(q => {
+            const low = Math.min(...q.prices);
+            const med = median(q.prices);
+            return `<tr>
+              <td><strong>${q.item}</strong><small>${q.spec}</small></td>
+              <td>${q.qty} ${q.unit}</td>
+              ${q.prices.map(p => {
+                const classes = ['price'];
+                if (p === low) classes.push('lowest');
+                if (p > med * (1 + limit)) classes.push('anomaly');
+                return `<td class="${classes.join(' ')}">$${p.toLocaleString()}</td>`;
+              }).join('')}
+              <td>${q.confidence}%</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>`;
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const limit = Number(threshold.value) / 100;
+      let saving = 0, anomalies = 0;
+      quotes.forEach(q => {
+        saving += (Math.max(...q.prices) - Math.min(...q.prices)) * q.qty;
+        const med = median(q.prices);
+        anomalies += q.prices.filter(p => p > med * (1 + limit)).length;
+      });
+      document.querySelector('#agentSummary').innerHTML = `
+        <h3>可節省 NT$ ${saving.toLocaleString()}</h3>
+        <p>景曜材料在 2 個品項為最低價。偵測到 <strong>${anomalies} 筆</strong>高於中位數 ${threshold.value}% 的報價；建議先確認規格是否完全相同，再向森禾建材議價。</p>
+        <div class="hint">依據：3 份原始報價 · 規則可追溯 · 尚未建立訂單</div>`;
+    }
+
+    function addLog(text) {
+      const now = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+      document.querySelector('#auditLog').insertAdjacentHTML('afterbegin', `<li><time>${now}</time>${text}</li>`);
+    }
+
+    function showToast(message) {
+      const toast = document.querySelector('#toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    runBtn.addEventListener('click', () => {
+      if (state.approved) {
+        state.sampled = true;
+        steps.forEach(s => s.className = 'step done');
+        runBtn.disabled = true;
+        runBtn.textContent = '樣品申請已建立';
+        addLog('已建立 3 家供應商樣品申請，等待人工送出');
+        showToast('樣品申請草稿已建立，尚未對外送出');
+        return;
+      }
+      runBtn.disabled = true;
+      runBtn.innerHTML = '<span class="loading">解析中 <i></i><i></i><i></i></span>';
+      comparisonArea.innerHTML = '<div class="empty-state"><div><div class="empty-icon">✦</div><strong>正在統一規格與稅別…</strong><p>保留原始檔來源，遇到低信心欄位會要求人工確認。</p></div></div>';
+      setTimeout(() => {
+        state.analyzed = true;
+        renderTable();
+        steps[1].className = 'step done';
+        steps[2].className = 'step active';
+        approveBtn.disabled = false;
+        runBtn.innerHTML = '重新執行比價';
+        runBtn.disabled = false;
+        addLog('Agent 完成 3 份報價比對，標記異常欄位');
+        showToast('比價完成：請先人工確認再進入下一步');
+      }, 850);
+    });
+
+    approveBtn.addEventListener('click', () => {
+      state.approved = true;
+      steps[2].className = 'step done';
+      steps[3].className = 'step active';
+      approveBtn.disabled = true;
+      approveBtn.textContent = '已由郭先生核准';
+      runBtn.textContent = '建立樣品申請';
+      addLog('郭先生確認比價結果，解鎖樣品申請');
+      showToast('已核准；Agent 可以準備樣品申請草稿');
+    });
+
+    threshold.addEventListener('input', () => {
+      thresholdValue.textContent = `${threshold.value}%`;
+      if (state.analyzed) renderTable();
+    });
+
+    document.querySelectorAll('.role-btn').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.role = btn.dataset.role;
+      renderKpis();
+    }));
+
+    const dialog = document.querySelector('#newTaskDialog');
+    document.querySelector('#newTaskBtn').addEventListener('click', () => dialog.showModal());
+    document.querySelector('#cancelTask').addEventListener('click', () => dialog.close());
+    document.querySelector('#newTaskForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const material = document.querySelector('#material').value.trim();
+      const error = document.querySelector('#formError');
+      if (!material) {
+        error.textContent = '請先填寫材料名稱，Agent 才能產生詢價規格。';
+        document.querySelector('#material').focus();
+        return;
+      }
+      error.textContent = '';
+      dialog.close();
+      addLog(`已為「${material}」建立詢價草稿`);
+      showToast(`「${material}」詢價草稿已建立`);
+      e.target.reset();
+    });
+
+    document.querySelector('#metricBtn').addEventListener('click', e => {
+      state.weekly = !state.weekly;
+      e.target.textContent = state.weekly ? '切換：30 天' : '切換：專案週';
+      showToast(state.weekly ? 'North Star：每個活躍專案每週完成的核准任務' : '已切回過去 30 天漏斗');
+    });
+
+    renderKpis();
+  </script>
+</body>
+</html>
